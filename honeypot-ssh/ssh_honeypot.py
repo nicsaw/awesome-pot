@@ -69,8 +69,6 @@ def handle_command(command: bytes, channel: paramiko.Channel) -> bytes:
     else:
         response += command
 
-    log_event() # TODO: Log client IP and command
-
     return response + b"\r\n"
 
 def handle_shell_session(channel: paramiko.Channel, client_ip):
@@ -88,6 +86,7 @@ def handle_shell_session(channel: paramiko.Channel, client_ip):
         if char == b"\r":
             response = handle_command(command, channel)
             channel.send(response)
+            log_event(client_ip=client_ip, event_type="command", command=command.decode("utf-8").strip(), response=response.decode("utf-8").strip())
             print(f"{response = }")
             channel.send(b"$ ")
             command = b""
