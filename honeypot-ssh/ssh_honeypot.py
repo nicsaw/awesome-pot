@@ -7,8 +7,10 @@ import datetime
 
 LOCALHOST = "127.0.0.1"
 SSH_PORT = 2222
+SSH_BANNER = "SSH-2.0-MySSHServer"
+host_key = paramiko.RSAKey(filename="server.key")
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 def log_event(**kwargs):
     log_entry = {
@@ -31,6 +33,7 @@ class SSHServer(paramiko.ServerInterface):
         log_event(client_ip=self.client_ip, event_type="check_channel_request", kind=kind)
         if kind == "session":
             return paramiko.OPEN_SUCCEEDED
+        return paramiko.OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
 
     def get_allowed_auths(self, username):
         log_event(client_ip=self.client_ip, event_type="get_allowed_auths", username=username)
@@ -39,7 +42,8 @@ class SSHServer(paramiko.ServerInterface):
     # Login attempt
     def check_auth_password(self, username, password):
         log_event(client_ip=self.client_ip, event_type="check_auth_password", username=username, password=password)
-        # Accept all logins for now
+        if username != "username" or password != "password":
+            return paramiko.AUTH_FAILED
         return paramiko.AUTH_SUCCESSFUL
 
     def check_channel_pty_request(self, channel, term, width, height, pixelwidth, pixelheight, modes):
@@ -53,26 +57,59 @@ class SSHServer(paramiko.ServerInterface):
         log_event(client_ip=self.client_ip, event_type="check_channel_exec_request", command=command)
         return True
 
-# class SSHServer(paramiko.ServerInterface):
-#     def __init__(self):
-#         self.event = threading.Event()
+def get_response(command: bytes, channel: paramiko.Channel) -> bytes:
+    response = b"\n"
 
-#     def check_auth_password(self, username, password):
-#         logging.info(f"Login attempt - Username: {username}, Password: {password}")
-#         return paramiko.AUTH_SUCCESSFUL
+    command = command.strip().decode("utf-8").strip()
+    if command == "exit":
+        response += b"Exiting..."
+        channel.close()
+    elif command == "pwd":
+        response += b"usr\\local"
+    else:
+        response += command
 
-#     def check_channel_request(self, kind, chanid):
-#         if kind == "session":
-#             return paramiko.OPEN_SUCCEEDED
-#         return paramiko.OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
+    log_event() # TODO: Log client IP and command
 
-def handle_client(client):
+    response += b"\r\n"
+    return response
+
+def handle_shell_session(channel: paramiko.Channel, client_ip):
+    command = ""
+    while True:
+        channel.send(b"$ ")
+
+        char = channel.recv(1)
+        if not char:
+            channel.close()
+
+        command += char
+
+        if char == b"\r":
+            response = get_response(command, channel)
+            channel.send(response)
+            channel.send(b"$ ")
+            command = ""
+
+def handle_client(client, addr):
+    log_event(client_ip=addr[0], event_type="client_connection")
+
     try:
         transport = paramiko.Transport(client)
-        server = SSHServer()
+        transport.local_version = SSH_BANNER
+        transport.add_server_key(host_key)
+        server = SSHServer(addr[0])
         transport.start_server(server=server)
 
+        channel = transport.accept(50)
+        if channel is None:
+            logging.warning("No channel opened")
+            return
 
+        welcome_banner = "Welcome!\r\n"
+        channel.send(welcome_banner)
+
+        handle_shell_session(channel, addr[0])
     except Exception as e:
         logging.error(f"ERROR handle_client(): {e}")
     finally:
@@ -81,20 +118,21 @@ def handle_client(client):
 def start_server(host="0.0.0.0", port=SSH_PORT):
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind((host, port))
-        sock.listen()
+        sock.listen(100)
         logging.info(f"Listening on {host}:{port}")
 
         while True:
             conn, addr = sock.accept()
-            logging.info(f"Got connection from {addr[0]}:{addr[1]}")
+            logging.info(f"Connection from {addr[0]}:{addr[1]}")
             client_thread = threading.Thread(target=handle_client, args=(conn, addr))
             client_thread.start()
             print(f"Active Connections: {threading.active_count() - 1}")
     except Exception as e:
-        logging.error(f"ERROR: {e}")
+        logging.error(f"ERROR start_server(): {e}")
     finally:
         sock.close()
 
 if __name__ == "__main__":
-    start_server(LOCALHOST, SSH_PORT) # Change later
+    start_server(LOCALHOST, port=SSH_PORT) # Change later
