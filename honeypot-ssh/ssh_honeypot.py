@@ -4,6 +4,7 @@ import socket
 import logging
 import json
 import datetime
+import traceback
 
 LOCALHOST = "127.0.0.1"
 SSH_PORT = 2222
@@ -42,7 +43,7 @@ class SSHServer(paramiko.ServerInterface):
     # Login attempt
     def check_auth_password(self, username, password):
         log_event(client_ip=self.client_ip, event_type="check_auth_password", username=username, password=password)
-        if username != "username" or password != "password":
+        if username != "username" or password != "":
             return paramiko.AUTH_FAILED
         return paramiko.AUTH_SUCCESSFUL
 
@@ -57,39 +58,39 @@ class SSHServer(paramiko.ServerInterface):
         log_event(client_ip=self.client_ip, event_type="check_channel_exec_request", command=command)
         return True
 
-def get_response(command: bytes, channel: paramiko.Channel) -> bytes:
+def handle_command(command: bytes, channel: paramiko.Channel) -> bytes:
     response = b"\n"
+    command = command.strip()
 
-    command = command.strip().decode("utf-8").strip()
-    if command == "exit":
-        response += b"Exiting..."
+    if command == b"exit":
         channel.close()
-    elif command == "pwd":
+    elif command == b"pwd":
         response += b"usr\\local"
     else:
         response += command
 
     log_event() # TODO: Log client IP and command
 
-    response += b"\r\n"
-    return response
+    return response + b"\r\n"
 
 def handle_shell_session(channel: paramiko.Channel, client_ip):
-    command = ""
+    command = b""
+    channel.send(b"$ ")
     while True:
-        channel.send(b"$ ")
-
         char = channel.recv(1)
         if not char:
             channel.close()
 
+        channel.send(char)
         command += char
+        print(f"{command = }")
 
         if char == b"\r":
-            response = get_response(command, channel)
+            response = handle_command(command, channel)
             channel.send(response)
+            print(f"{response = }")
             channel.send(b"$ ")
-            command = ""
+            command = b""
 
 def handle_client(client, addr):
     log_event(client_ip=addr[0], event_type="client_connection")
@@ -112,6 +113,7 @@ def handle_client(client, addr):
         handle_shell_session(channel, addr[0])
     except Exception as e:
         logging.error(f"ERROR handle_client(): {e}")
+        print(traceback.format_exc())
     finally:
         transport.close()
 
@@ -131,6 +133,7 @@ def start_server(host="0.0.0.0", port=SSH_PORT):
             print(f"Active Connections: {threading.active_count() - 1}")
     except Exception as e:
         logging.error(f"ERROR start_server(): {e}")
+        print(traceback.format_exc())
     finally:
         sock.close()
 
