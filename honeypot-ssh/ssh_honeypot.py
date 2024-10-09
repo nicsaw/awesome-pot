@@ -16,9 +16,9 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 def log_event(**kwargs):
     log_entry = {
-        "timestamp": datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3],
-        "client_ip": kwargs.get('client_ip', None),
-        "event_type": kwargs.get('event_type', 'generic_event'),
+        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
+        "client_ip": kwargs.get("client_ip", None),
+        "event_type": kwargs.get("event_type", "generic_event"),
     }
 
     extra_fields = {k: v for k, v in kwargs.items() if k not in log_entry}
@@ -28,7 +28,7 @@ def log_event(**kwargs):
 
 def get_ip_info(ip: str):
     try:
-        response = requests.get(f'https://ipinfo.io/{ip}/json', timeout=5)
+        response = requests.get(f"https://ipinfo.io/{ip}/json", timeout=5)
         data = response.json()
         return data
     except Exception as e:
