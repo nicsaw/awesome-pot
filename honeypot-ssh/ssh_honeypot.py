@@ -5,6 +5,7 @@ import logging
 import json
 import datetime
 import traceback
+import requests
 
 LOCALHOST = "127.0.0.1"
 SSH_PORT = 2222
@@ -24,6 +25,15 @@ def log_event(**kwargs):
     log_entry.update(extra_fields)
 
     logging.info(json.dumps(log_entry))
+
+def get_ip_info(ip: str):
+    try:
+        response = requests.get(f'https://ipinfo.io/{ip}/json', timeout=5)
+        data = response.json()
+        return data
+    except Exception as e:
+        logging.error(f"ERROR get_geolocation({ip}): {e}")
+        return None
 
 class SSHServer(paramiko.ServerInterface):
     def __init__(self, client_ip):
