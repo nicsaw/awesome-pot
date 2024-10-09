@@ -58,36 +58,37 @@ class SSHServer(paramiko.ServerInterface):
         log_event(client_ip=self.client_ip, event_type="check_channel_exec_request", command=command)
         return True
 
-def handle_command(command: bytes, channel: paramiko.Channel) -> bytes:
+def handle_command(command: bytes, channel: paramiko.Channel, client_ip):
     response = b"\n"
     command = command.strip()
 
     if command == b"exit":
         channel.close()
     elif command == b"pwd":
-        response += b"usr\\local"
+        response += b"\\usr\\local\\"
+    elif command == b"ls":
+        response += b"file1.txt\nfile2.txt\n"
     else:
         response += command
 
-    return response + b"\r\n"
+    channel.send(response + b"\r\n")
+    print(f"{response = }")
+    log_event(client_ip=client_ip, event_type="command", command=command.decode("utf-8").strip(), response=response.decode("utf-8").strip())
 
 def handle_shell_session(channel: paramiko.Channel, client_ip):
-    command = b""
     channel.send(b"$ ")
+    command = b""
     while True:
         char = channel.recv(1)
+        channel.send(char)
         if not char:
             channel.close()
 
-        channel.send(char)
         command += char
         print(f"{command = }")
 
         if char == b"\r":
-            response = handle_command(command, channel)
-            channel.send(response)
-            log_event(client_ip=client_ip, event_type="command", command=command.decode("utf-8").strip(), response=response.decode("utf-8").strip())
-            print(f"{response = }")
+            handle_command(command, channel, client_ip)
             channel.send(b"$ ")
             command = b""
 
