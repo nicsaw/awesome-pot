@@ -1,10 +1,24 @@
 from flask import Flask, Request, request, render_template, redirect, url_for
 import logging, datetime, json
 from user_agents import parse
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__, template_folder="templates")
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sap.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+db = SQLAlchemy(app)
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(999), unique=True, nullable=False)
+    email = db.Column(db.String(999), unique=True, nullable=False)
+    password = db.Column(db.String(999), nullable=False)
+    date_created = db.Column(db.DateTime, default=datetime.datetime.now)
+
+    def __repr__(self):
+        return '<User %r>' % self.username
 
 def log_event(request: Request, **kwargs):
     log_entry = {
@@ -49,6 +63,10 @@ def register():
         if password != confirm_password:
             return redirect(url_for('register'))
 
+        newUser = User(username=username, email=email, password=password)
+        db.session.add(newUser)
+        db.session.commit()
+
         return redirect(url_for('index'))
 
     return render_template("register.html")
@@ -68,9 +86,16 @@ def login():
             password=password
         )
 
-        return redirect(url_for('index'))
+        user = User.query.filter_by(email=email, password=password).first()
+        if user:
+            return redirect(url_for('index'))
+        else:
+            return redirect(url_for('login'))
 
     return render_template("login.html")
 
 if __name__ == "__main__":
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
     app.run(host="127.0.0.1", port=8080, debug=True)
