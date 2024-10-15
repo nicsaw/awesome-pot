@@ -1,24 +1,42 @@
 from flask import Flask, request, render_template, redirect, url_for
-
+import logging, datetime, json
 app = Flask(__name__, template_folder="templates")
+
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+def log_event(**kwargs):
+    log_entry = {
+        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
+        "client_ip": kwargs.get("client_ip", None),
+        "event_type": kwargs.get("event_type", "generic_event"),
+    }
+
+    extra_fields = {k: v for k, v in kwargs.items() if k not in log_entry}
+    log_entry.update(extra_fields)
+
+    logging.info(json.dumps(log_entry))
 
 @app.route("/")
 def index():
+    client_ip = request.remote_addr
+    log_event(client_ip=client_ip, event_type="access_index")
     return render_template("index.html")
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
+    client_ip = request.remote_addr
+    log_event(client_ip=client_ip, event_type="access_register")
+
     if request.method == 'POST':
         username = request.form['username']
         email = request.form['email']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
 
+        log_event(client_ip=client_ip, event_type="attempt_register", username=username, email=email, password=password, confirm_password=confirm_password)
+
         if password != confirm_password:
             return redirect(url_for('register'))
-
-        # TODO: Log
-        print(username, email, password, confirm_password)
 
         return redirect(url_for('index'))
 
@@ -26,12 +44,14 @@ def register():
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
+    client_ip = request.remote_addr
+    log_event(client_ip=client_ip, event_type="access_login")
+
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
 
-        # TODO: Log
-        print(email, password)
+        log_event(client_ip=client_ip, event_type="attempt_login", email=email, password=password)
 
         return redirect(url_for('index'))
 
