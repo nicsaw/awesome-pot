@@ -1,20 +1,40 @@
 from flask import Flask, request, render_template, redirect, url_for
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="templates")
 
 @app.route("/")
 def index():
-    print(f"Accessed index from IP: {request.remote_addr}")
     return render_template("index.html")
 
-@app.route("/register")
+@app.route("/register", methods=['GET', 'POST'])
 def register():
-    print(f"Accessed register from IP: {request.remote_addr}")
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+
+        if password != confirm_password:
+            return redirect(url_for('register'))
+
+        # TODO: Log
+        print(username, email, password, confirm_password)
+
+        return redirect(url_for('index'))
+
     return render_template("register.html")
 
-@app.route("/login")
+@app.route("/login", methods=['GET', 'POST'])
 def login():
-    print(f"Accessed login from IP: {request.remote_addr}")
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+
+        # TODO: Log
+        print(email, password)
+
+        return redirect(url_for('index'))
+
     return render_template("login.html")
 
 if __name__ == "__main__":
