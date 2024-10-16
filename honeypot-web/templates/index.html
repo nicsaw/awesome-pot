@@ -5,10 +5,42 @@
 {% endblock %}
 
 {% block body %}
-<h1>Welcome to SAP Password Manager</h1>
-<p>Secure Account Passwords</p>
-<div>
-    <a href="{{ url_for('login') }}">Login</a>
-    <a href="{{ url_for('register') }}">Register</a>
-</div>
+
+<h1>Welcome to SAP (Secure Account Passwords) - Password Manager</h1>
+
+<form action="/" method="POST">
+    <input type="text" name="website" id="website" placeholder="Website">
+    <input type="text" name="username" id="username" placeholder="Username">
+    <input type="text" name="password" id="password" placeholder="Password">
+    <button type="submit" value="add_item">Add</button>
+</form>
+
+<table>
+
+<thead>
+    <tr>
+        <th><b>Website</b></th>
+        <th><b>Username</b></th>
+        <th><b>Password</b></th>
+        <th><b>Actions</b></th>
+    </tr>
+</thead>
+
+<tbody>
+    {% for item in items %}
+    <tr>
+        <td>{{ item.website }}</td>
+        <td>{{ item.username }}</td>
+        <td>{{ item.password }}</td>
+        <td>
+            <a href="{{ url_for('edit', id=item.id) }}">Edit</a>
+            <br>
+            <a href="{{ url_for('delete', id=item.id) }}">Delete</a>
+        </td>
+    </tr>
+    {% endfor %}
+</tbody>
+
+</table>
+
 {% endblock %}

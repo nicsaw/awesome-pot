@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block head %}
+<title>SAP - Edit Item</title>
+{% endblock %}
+
+{% block body %}
+<h1>Edit Item</h1>
+<form method="POST" action="{{ url_for('edit', id=item.id) }}">
+    <div>
+        <label for="website">Website:</label>
+        <input type="text" id="website" name="website" value="{{ item.website }}" placeholder="Website" required>
+    </div>
+    <div>
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" value="{{ item.username }}" placeholder="Username" required>
+    </div>
+    <div>
+        <label for="password">Password:</label>
+        <input type="text" id="password" name="password" value="{{ item.password }}" placeholder="Password" required>
+    </div>
+    <button type="submit" value="update_item">Update</button>
+</form>
+{% endblock %}
