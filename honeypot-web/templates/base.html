@@ -3,10 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        nav {
+            background-color: #333;
+            overflow: hidden;
+        }
+        nav a {
+            float: left;
+            color: white;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+        }
+        nav a:hover {
+            background-color: gray;
+            color: black;
+        }
+        nav .right {
+            float: right;
+        }
+    </style>
     {% block head %}
     {% endblock %}
 </head>
 <body>
+    <nav>
+        <a href="{{ url_for('index') }}">SAP</a>
+        <a href="{{ url_for('login') }}" class="right">Login</a>
+        <a href="{{ url_for('register') }}" class="right">Register</a>
+    </nav>
+
     {% block body %}
     {% endblock %}
 </body>
