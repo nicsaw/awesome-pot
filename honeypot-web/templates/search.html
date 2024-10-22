@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block head %}
+<title>SAP - Search</title>
+{% endblock %}
+
+{% block body %}
+<h1>Search Results for: {{ query }}</h1>
+
+<ul>
+    {% for result in results %}
+        <li>
+            <strong>Website:</strong> {{ result.website }}<br>
+            <strong>Username:</strong> {{ result.username }}<br>
+            <strong>Password:</strong> {{ result.password }}<br>
+        </li>
+    {% endfor %}
+</ul>
+
+{% endblock %}

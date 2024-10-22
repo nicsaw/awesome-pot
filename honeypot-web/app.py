@@ -109,6 +109,14 @@ def delete(id):
 
     return redirect(url_for("index"))
 
+@app.route('/search', methods=['GET'])
+def search():
+    query = request.args.get('q', '')
+    log_event(request, event_type="access_search", query=query)
+
+    search_results = Item.query.filter(Item.website.ilike(f"%{query}%")).all()
+    return render_template('search.html', query=query, results=search_results)
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     log_event(request, event_type="access_register")
