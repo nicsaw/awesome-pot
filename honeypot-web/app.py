@@ -1,11 +1,14 @@
-from flask import Flask, Request, request, render_template, redirect, url_for
-import logging, datetime, json
+from flask import Flask, Request, request, render_template, redirect, url_for, flash
+import logging, datetime, json, dotenv, os
 from user_agents import parse
 from flask_sqlalchemy import SQLAlchemy
+
+dotenv.load_dotenv()
 
 app = Flask(__name__, template_folder="templates")
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///sap.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
+app.secret_key = os.environ.get("FLASK_SECRET_KEY")
 db = SQLAlchemy(app)
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -116,6 +119,21 @@ def search():
 
     search_results = Item.query.filter(Item.website.ilike(f"%{query}%")).all()
     return render_template('search.html', query=query, results=search_results)
+
+@app.route("/import_passwords", methods=["GET", "POST"])
+def import_passwords():
+    log_event(request, event_type="access_import_passwords")
+
+    if request.method == "POST":
+        file = request.files["file"]
+        file_content: bytes = file.read()
+
+        
+
+        flash("✅ File uploaded successfully!", "success")
+        return redirect(url_for("import_passwords"))
+
+    return render_template("import_passwords.html")
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
