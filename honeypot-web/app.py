@@ -2,12 +2,16 @@ from flask import Flask, Request, request, render_template, redirect, url_for, f
 import logging, datetime, json, dotenv, os
 from user_agents import parse
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.utils import secure_filename
 
 dotenv.load_dotenv()
+
+UPLOAD_FOLDER = 'uploads'
 
 app = Flask(__name__, template_folder="templates")
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///sap.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.secret_key = os.environ.get("FLASK_SECRET_KEY")
 db = SQLAlchemy(app)
 
@@ -125,13 +129,23 @@ def import_passwords():
     log_event(request, event_type="access_import_passwords")
 
     if request.method == "POST":
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+
         file = request.files["file"]
-        file_content: bytes = file.read()
 
-        
+        if file.filename == '':
+            flash('No selected file')
+            return redirect(request.url)
 
-        flash("✅ File uploaded successfully!", "success")
-        return redirect(url_for("import_passwords"))
+        if file:
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+            flash("✅ File uploaded successfully!", "success")
+            return redirect(url_for("import_passwords"))
 
     return render_template("import_passwords.html")
 
