@@ -164,3 +164,7 @@ cython_debug/
 # RSA Keys
 server.key
 server.key.pub
+
+# Cowrie
+cowrie.json
+cowrie*.csv

@@ -26,15 +26,6 @@ def log_event(**kwargs):
 
     logging.info(json.dumps(log_entry))
 
-def get_ip_info(ip: str):
-    try:
-        response = requests.get(f"https://ipinfo.io/{ip}/json", timeout=5)
-        data = response.json()
-        return data
-    except Exception as e:
-        logging.error(f"ERROR get_geolocation({ip}): {e}")
-        return None
-
 class SSHServer(paramiko.ServerInterface):
     def __init__(self, client_ip):
         self.event = threading.Event()
@@ -75,11 +66,15 @@ def handle_command(command: bytes, channel: paramiko.Channel, client_ip):
     if command == b"exit":
         channel.close()
     elif command == b"pwd":
-        response += b"\\usr\\local\\"
+        response += b"/home/user"
     elif command == b"ls":
-        response += b"file1.txt\nfile2.txt\n"
+        response += b"file1.txt\nfile2.txt\nDocuments\nDownloads\n"
+    elif command == b"whoami":
+        response += b"user"
+    elif command.startswith(b"cd "):
+        response += b""
     else:
-        response += command
+        response += b"bash: " + command + b": command not found"
 
     channel.send(response + b"\r\n")
     print(f"{response = }")
