@@ -140,6 +140,7 @@ def start_server(host="0.0.0.0", port=2222):
         logging.error(f"ERROR start_server(): {e}")
         print(traceback.format_exc())
     finally:
+        log_event(event_type="socket_close")
         sock.close()
 
 if __name__ == "__main__":
