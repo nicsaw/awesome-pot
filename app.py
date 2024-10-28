@@ -89,7 +89,7 @@ def index():
 
         db.session.add(newItem)
         db.session.commit()
-        log_event(request, event_type=f"item_new", item=newItem, website=website, username=username, password=password)
+        log_event(request, event_type=f"item_new", item=newItem.to_dict(), website=website, username=username, password=password)
         return redirect(url_for("index"))
 
     return render_template("index.html", items=Item.query.all())
@@ -97,14 +97,14 @@ def index():
 @app.route("/edit/<int:id>", methods=["GET", "POST"])
 def edit(id):
     targetItem = Item.query.get_or_404(id)
-    log_event(request, event_type=f"item_editing", item=targetItem, website=targetItem.website, username=targetItem.username, password=targetItem.password, id=targetItem.password)
+    log_event(request, event_type=f"item_editing", item=targetItem.to_dict(), website=targetItem.website, username=targetItem.username, password=targetItem.password, id=targetItem.password)
     if request.method == "POST":
         try:
             targetItem.website = request.form["website"]
             targetItem.username = request.form["username"]
             targetItem.password = request.form["password"]
             db.session.commit()
-            log_event(request, event_type=f"item_edited", item=targetItem, website=targetItem.website, username=targetItem.username, password=targetItem.password, id=targetItem.password)
+            log_event(request, event_type=f"item_edited", item=targetItem.to_dict(), website=targetItem.website, username=targetItem.username, password=targetItem.password, id=targetItem.password)
             return redirect(url_for("index"))
         except Exception as e:
             print(f"ERROR edit({id}): {e}")
@@ -115,7 +115,7 @@ def edit(id):
 def delete(id):
     targetItem = Item.query.get_or_404(id)
     try:
-        log_event(request, event_type=f"item_delete", item=targetItem, website=targetItem.website, username=targetItem.username, password=targetItem.password, id=targetItem.password)
+        log_event(request, event_type=f"item_delete", item=targetItem.to_dict(), website=targetItem.website, username=targetItem.username, password=targetItem.password, id=targetItem.password)
         db.session.delete(targetItem)
         db.session.commit()
     except Exception as e:
@@ -127,7 +127,10 @@ def delete(id):
 def search():
     query = request.args.get('q', '')
     search_results = Item.query.filter(Item.website.ilike(f"%{query}%")).all()
-    log_event(request, event_type="search", query=query, search_results=search_results)
+
+    search_results_dict = [item.to_dict() for item in search_results]
+    log_event(request, event_type="search", query=query, search_results=search_results_dict)
+
     return render_template('search.html', query=query, results=search_results)
 
 @app.route("/import_passwords", methods=["GET", "POST"])
