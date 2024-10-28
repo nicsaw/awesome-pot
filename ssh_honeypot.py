@@ -5,14 +5,11 @@ import logging
 import json
 import datetime
 import traceback
-import requests
 
-LOCALHOST = "127.0.0.1"
-SSH_PORT = 2222
 SSH_BANNER = "SSH-2.0-MySSHServer"
 host_key = paramiko.RSAKey(filename="server.key")
 
-logging.basicConfig(level=logging.INFO, format="%(message)s")
+logging.basicConfig(level=logging.INFO, format="%(message)s", filename="sap_ssh.log")
 
 def log_event(**kwargs):
     log_entry = {
@@ -45,7 +42,9 @@ class SSHServer(paramiko.ServerInterface):
     def check_auth_password(self, username, password):
         log_event(client_ip=self.client_ip, event_type="check_auth_password", username=username, password=password)
         if username != "username" or password != "":
+            log_event(client_ip=self.client_ip, event_type="login_fail", username=username, password=password)
             return paramiko.AUTH_FAILED
+        log_event(client_ip=self.client_ip, event_type="login_success", username=username, password=password)
         return paramiko.AUTH_SUCCESSFUL
 
     def check_channel_pty_request(self, channel, term, width, height, pixelwidth, pixelheight, modes):
@@ -64,11 +63,12 @@ def handle_command(command: bytes, channel: paramiko.Channel, client_ip):
     command = command.strip()
 
     if command == b"exit":
+        log_event(client_ip=client_ip, event_type="connection_closed")
         channel.close()
     elif command == b"pwd":
         response += b"/home/user"
     elif command == b"ls":
-        response += b"file1.txt\nfile2.txt\nDocuments\nDownloads\n"
+        response += b"passwords.txt  Documents  Downloads"
     elif command == b"whoami":
         response += b"user"
     elif command.startswith(b"cd "):
@@ -98,7 +98,7 @@ def handle_shell_session(channel: paramiko.Channel, client_ip):
             command = b""
 
 def handle_client(client, addr):
-    log_event(client_ip=addr[0], event_type="client_connection")
+    log_event(client_ip=addr[0], port=addr[1], event_type="client_connection")
 
     try:
         transport = paramiko.Transport(client)
@@ -122,7 +122,7 @@ def handle_client(client, addr):
     finally:
         transport.close()
 
-def start_server(host="0.0.0.0", port=SSH_PORT):
+def start_server(host="0.0.0.0", port=2222):
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -143,4 +143,4 @@ def start_server(host="0.0.0.0", port=SSH_PORT):
         sock.close()
 
 if __name__ == "__main__":
-    start_server(LOCALHOST, port=SSH_PORT) # Change later
+    start_server()
