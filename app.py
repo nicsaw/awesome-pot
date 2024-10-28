@@ -15,7 +15,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.secret_key = os.environ.get("FLASK_SECRET_KEY")
 db = SQLAlchemy(app)
 
-logging.basicConfig(level=logging.INFO, format="%(message)s")
+logging.basicConfig(level=logging.INFO, format="%(message)s", filename="sap_web.log")
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
