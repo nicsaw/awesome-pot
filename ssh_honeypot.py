@@ -21,6 +21,7 @@ def log_event(**kwargs):
     extra_fields = {k: v for k, v in kwargs.items() if k not in log_entry}
     log_entry.update(extra_fields)
 
+    print(log_entry)
     logging.info(json.dumps(log_entry))
 
 class SSHServer(paramiko.ServerInterface):
@@ -128,11 +129,11 @@ def start_server(host="0.0.0.0", port=2222):
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind((host, port))
         sock.listen(100)
-        logging.info(f"Listening on {host}:{port}")
+        log_event(event_type="socket_open", host=host, port=port)
 
         while True:
             conn, addr = sock.accept()
-            logging.info(f"Connection from {addr[0]}:{addr[1]}")
+            log_event(event_type="connection_open", host=addr[0], port=addr[1])
             client_thread = threading.Thread(target=handle_client, args=(conn, addr))
             client_thread.start()
             print(f"Active Connections: {threading.active_count() - 1}")
