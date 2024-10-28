@@ -41,7 +41,7 @@ class SSHServer(paramiko.ServerInterface):
     # Login attempt
     def check_auth_password(self, username, password):
         log_event(client_ip=self.client_ip, event_type="check_auth_password", username=username, password=password)
-        if username != "username" or password != "":
+        if username != "user" or password != "password123":
             log_event(client_ip=self.client_ip, event_type="login_fail", username=username, password=password)
             return paramiko.AUTH_FAILED
         log_event(client_ip=self.client_ip, event_type="login_success", username=username, password=password)
