@@ -24,7 +24,7 @@ logging.basicConfig(level=logging.INFO, format="%(message)s", filename="sap_web.
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(999), unique=True, nullable=False)
+    username = db.Column(db.String(999), nullable=False)
     email = db.Column(db.String(999), unique=True, nullable=False)
     password = db.Column(db.String(999), nullable=False)
     date_created = db.Column(db.DateTime, default=datetime.datetime.now)
@@ -89,17 +89,21 @@ def index():
         username = request.form["username"]
         password = request.form["password"]
 
-        newItem = Item(
-            userID=current_user.id,  # Use the current user's ID
-            website=website,
-            username=username,
-            password=password
-        )
+        if current_user.is_authenticated:
+            newItem = Item(
+                userID=current_user.id,
+                website=website,
+                username=username,
+                password=password
+            )
 
-        db.session.add(newItem)
-        db.session.commit()
-        log_event(request, event_type=f"item_new", item=newItem.to_dict(), website=website, username=username, password=password)
-        return redirect(url_for("index"))
+            db.session.add(newItem)
+            db.session.commit()
+            log_event(request, event_type=f"item_new", item=newItem.to_dict(), website=website, username=username, password=password)
+            return redirect(url_for("index"))
+        else:
+            flash("You must be logged in to add an item.", "error")
+            return redirect(url_for("login"))
 
     return render_template("index.html", items=Item.query.all())
 
@@ -114,6 +118,7 @@ def edit(id):
             targetItem.password = request.form["password"]
             db.session.commit()
             log_event(request, event_type=f"item_edited", item=targetItem.to_dict(), website=targetItem.website, username=targetItem.username, password=targetItem.password, id=targetItem.password)
+            flash(f"Item {targetItem.id} updated", "success")
             return redirect(url_for("index"))
         except Exception as e:
             print(f"ERROR edit({id}): {e}")
@@ -127,6 +132,7 @@ def delete(id):
         log_event(request, event_type=f"item_delete", item=targetItem.to_dict(), website=targetItem.website, username=targetItem.username, password=targetItem.password, id=targetItem.password)
         db.session.delete(targetItem)
         db.session.commit()
+        flash(f"Item {targetItem.id} deleted", "success")
     except Exception as e:
         print(f"ERROR delete({id}): {e}")
 
@@ -188,6 +194,11 @@ def register():
 
         if password != confirm_password:
             flash("Passwords do not match!", "error")
+            return redirect(url_for("register"))
+
+        existingUser = User.query.filter_by(email=email).first()
+        if existingUser:
+            flash("Email already registered!", "error")
             return redirect(url_for("register"))
 
         newUser = User(username=username, email=email, password=password)
