@@ -168,3 +168,6 @@ server.key.pub
 # Cowrie
 cowrie.json
 cowrie*.csv
+
+# Web Honeypot
+uploads

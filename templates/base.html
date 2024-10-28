@@ -55,8 +55,12 @@
 <body>
     <nav>
         <a href="{{ url_for('index') }}">SAP</a>
-        <a href="{{ url_for('login') }}" class="right">Login</a>
-        <a href="{{ url_for('register') }}" class="right">Register</a>
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('logout') }}" class="right">Logout</a>
+        {% else %}
+            <a href="{{ url_for('login') }}" class="right">Login</a>
+            <a href="{{ url_for('register') }}" class="right">Register</a>
+        {% endif %}
         <a href="{{ url_for('search') }}" class="right">Search</a>
         <a href="{{ url_for('import_passwords') }}" class="right">Import Passwords</a>
     </nav>

@@ -1,8 +1,9 @@
-from flask import Flask, Request, request, render_template, redirect, url_for, flash
+from flask import Flask, Request, request, render_template, redirect, url_for, flash, session
 import logging, datetime, json, dotenv, os
 from user_agents import parse
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
 dotenv.load_dotenv()
 
@@ -15,9 +16,13 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.secret_key = os.environ.get("FLASK_SECRET_KEY")
 db = SQLAlchemy(app)
 
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
 logging.basicConfig(level=logging.INFO, format="%(message)s", filename="sap_web.log")
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(999), unique=True, nullable=False)
     email = db.Column(db.String(999), unique=True, nullable=False)
@@ -55,6 +60,10 @@ class Item(db.Model):
             "password": self.password
         }
 
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 def log_event(request: Request, **kwargs):
     log_entry = {
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
@@ -81,7 +90,7 @@ def index():
         password = request.form["password"]
 
         newItem = Item(
-            userID=1, # TODO: ========== DONT FORGET TO CHANGE THIS ==========
+            userID=current_user.id,  # Use the current user's ID
             website=website,
             username=username,
             password=password
@@ -178,13 +187,15 @@ def register():
         )
 
         if password != confirm_password:
+            flash("Passwords do not match!", "error")
             return redirect(url_for("register"))
 
         newUser = User(username=username, email=email, password=password)
         db.session.add(newUser)
         db.session.commit()
 
-        return redirect(url_for("index"))
+        flash("Registration successful! You can now log in.", "success")
+        return redirect(url_for("login"))
 
     return render_template("register.html")
 
@@ -205,14 +216,24 @@ def login():
 
         user = User.query.filter_by(email=email, password=password).first()
         if user:
+            login_user(user)
+            flash("Login successful!", "success")
             return redirect(url_for("index"))
         else:
+            flash("Invalid email or password!", "error")
             return redirect(url_for("login"))
 
     return render_template("login.html")
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    flash("You have been logged out.", "success")
+    return redirect(url_for("login"))
 
 if __name__ == "__main__":
     with app.app_context():
         db.drop_all()
         db.create_all()
-    app.run(host="127.0.0.1", port=8080, debug=True)
+    app.run(host="0.0.0.0", port=8080)
