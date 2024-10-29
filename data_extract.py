@@ -1,9 +1,10 @@
 import zipfile
 import glob
 import requests
+from app import UPLOAD_FOLDER
 
 EXTENSIONS = ["**/*.json", "**/*.json.*", "**/*.log", "**/*.log.*", "**/*.csv"]
-EXCLUDED_FOLDERS = ["uploads", "venv", ".venv"]
+EXCLUDED_FOLDERS = [UPLOAD_FOLDER, "venv", ".venv"]
 ZIP_FILENAME = "data.zip"
 UPLOAD_URL = "https://file.io"
 

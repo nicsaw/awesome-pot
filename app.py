@@ -166,6 +166,8 @@ def import_passwords():
 
         if file:
             os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            os.chmod(app.config['UPLOAD_FOLDER'], 0o755)  # Read and execute for owner, read for group and others
+
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             log_event(request, event_type="file_upload", filename=filename, size=file.content_length)
