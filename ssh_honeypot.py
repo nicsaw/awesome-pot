@@ -9,7 +9,7 @@ import traceback
 SSH_BANNER = "SSH-2.0-MySSHServer"
 host_key = paramiko.RSAKey(filename="server.key")
 
-logging.basicConfig(level=logging.INFO, format="%(message)s", filename="sap_ssh.log")
+logging.basicConfig(level=logging.INFO, format="%(message)s", filename="hp-ssh.log")
 
 def log_event(**kwargs):
     log_entry = {
