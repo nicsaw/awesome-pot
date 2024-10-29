@@ -2,7 +2,8 @@ import zipfile
 import glob
 import requests
 
-EXTENSIONS = ["**/*.json", "**/*.json.*", "**/*.log", "**/*.log.*", "**/*.csv", ]
+EXTENSIONS = ["**/*.json", "**/*.json.*", "**/*.log", "**/*.log.*", "**/*.csv"]
+EXCLUDED_FOLDERS = ["uploads", "venv", ".venv"]
 ZIP_FILENAME = "data.zip"
 UPLOAD_URL = "https://file.io"
 
@@ -14,8 +15,10 @@ def zip_files():
 
     with zipfile.ZipFile(ZIP_FILENAME, 'w') as zipf:
         for file in files_to_zip:
-            zipf.write(file)
-    print(f"Zipped files into {ZIP_FILENAME}")
+            if not any(folder in file.split('/') for folder in EXCLUDED_FOLDERS):
+                zipf.write(file)
+
+    print(f"Zipped files into {ZIP_FILENAME}:\n\t{"\n\t".join([file for file in files_to_zip if not any(folder in file.split('/') for folder in EXCLUDED_FOLDERS)])}")
 
 def upload_file():
     with open(ZIP_FILENAME, "rb") as file:
