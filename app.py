@@ -20,7 +20,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-logging.basicConfig(level=logging.INFO, format="%(message)s", filename="sap_web.log")
+logging.basicConfig(level=logging.INFO, format="%(message)s", filename="hp-web.log")
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -78,6 +78,7 @@ def log_event(request: Request, **kwargs):
     extra_fields = {k: v for k, v in kwargs.items() if k not in log_entry}
     log_entry.update(extra_fields)
 
+    print(log_entry)
     logging.info(json.dumps(log_entry))
 
 @app.route("/", methods=["GET", "POST"])
@@ -167,6 +168,7 @@ def import_passwords():
             os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            log_event(request, event_type="file_upload", filename=filename, size=file.content_length)
 
             flash("✅ File uploaded successfully!", "success")
             return redirect(url_for("import_passwords"))
