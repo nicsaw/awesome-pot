@@ -165,9 +165,11 @@ cython_debug/
 server.key
 server.key.pub
 
-# Cowrie
-cowrie.json
-cowrie*.csv
-
 # Web Honeypot
 uploads
+
+# Data files
+*.json
+*.log
+*.csv
+*.zip
