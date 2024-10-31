@@ -166,7 +166,12 @@ def import_passwords():
 
         if file:
             os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-            os.chmod(app.config['UPLOAD_FOLDER'], 0o755)  # Read and execute for owner, read for group and others
+            os.chmod(app.config['UPLOAD_FOLDER'], 0o400) # r--------
+
+            # TODO
+            # Hash the file and compare to known hashes of malware
+            # Find keywords (system, exec, /bin)
+            # Check if the file in plaintext or bytes?
 
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
