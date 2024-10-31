@@ -252,8 +252,13 @@ def logout():
     flash("You have been logged out.", "success")
     return redirect(url_for("login"))
 
-if __name__ == "__main__":
+def run(host="0.0.0.0", port=8080):
     with app.app_context():
-        db.drop_all()
         db.create_all()
-    app.run(host="0.0.0.0", port=8080)
+    app.run(host=host, port=port)
+
+if __name__ == "__main__":
+    try:
+        run()
+    except Exception as e:
+        print(e)

@@ -1,5 +1,6 @@
 import argparse
-import subprocess
+from ssh_honeypot import start_server
+from app import run
 
 SSH = "ssh"
 SSH_DEFAULT_PORT = 2222
@@ -39,12 +40,12 @@ if __name__ == "__main__":
     try:
         args = parse_args()
 
-        if args.type == WEB:
-            print(f"Starting Web honeypot on {args.host}:{args.port}")
-            subprocess.run(["python3", "app.py"])
-        elif args.type == SSH:
+        if args.type == SSH:
             print(f"Starting SSH honeypot on {args.host}:{args.port}")
-            subprocess.run(["python3", "ssh_honeypot.py"])
+            start_server(host=args.host, port=args.port)
+        elif args.type == WEB:
+            print(f"Starting Web honeypot on {args.host}:{args.port}")
+            run(host=args.host, port=args.port)
 
     except Exception as e:
         print(e)
