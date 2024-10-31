@@ -1,7 +1,8 @@
 paramiko
 flask
-user_agents
 flask_sqlalchemy
+flask_login
+user_agents
 werkzeug
 requests
 pandas
