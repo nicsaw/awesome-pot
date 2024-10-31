@@ -4,6 +4,7 @@ from user_agents import parse
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+import os
 
 dotenv.load_dotenv()
 
@@ -13,6 +14,16 @@ app = Flask(__name__, template_folder="templates")
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///sap.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+if not os.environ.get("FLASK_SECRET_KEY"):
+    if not os.path.exists(".env"):
+        with open(".env", 'w') as f:
+            pass
+
+    with open(".env", 'a') as f:
+        f.write(f"FLASK_SECRET_KEY={os.urandom(12).hex()}\n")
+    dotenv.load_dotenv()
+
 app.secret_key = os.environ.get("FLASK_SECRET_KEY")
 db = SQLAlchemy(app)
 
