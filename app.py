@@ -73,7 +73,7 @@ class Item(db.Model):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 def log_event(request: Request, **kwargs):
     log_entry = {
@@ -175,21 +175,20 @@ def import_passwords():
             flash('No selected file')
             return redirect(request.url)
 
-        if file:
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-            os.chmod(app.config['UPLOAD_FOLDER'], 0o400) # r--------
+        try:
+            if file:
+                os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+                os.chmod(app.config['UPLOAD_FOLDER'], 0o700)  # rwx------
 
-            # TODO
-            # Hash the file and compare to known hashes of malware
-            # Find keywords (system, exec, /bin)
-            # Check if the file in plaintext or bytes?
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                log_event(request, event_type="file_upload", filename=filename, size=file.content_length)
 
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            log_event(request, event_type="file_upload", filename=filename, size=file.content_length)
-
-            flash("✅ File uploaded successfully!", "success")
-            return redirect(url_for("import_passwords"))
+                flash("✅ File uploaded successfully!", "success")
+                return redirect(url_for("import_passwords"))
+        except Exception as e:
+            log_event(request, event_type="file_upload_error", error=str(e))
+            flash(f"An error occurred while uploading the file {filename}.", "error")
 
     return render_template("import_passwords.html")
 
@@ -272,4 +271,5 @@ if __name__ == "__main__":
     try:
         run()
     except Exception as e:
+        log_event(request, event_type="exception", exception=str(e))
         print(e)
