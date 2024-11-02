@@ -19,7 +19,7 @@ def zip_files():
             if not any(folder in file.split('/') for folder in EXCLUDED_FOLDERS):
                 zipf.write(file)
 
-    print(f"Zipped files into {ZIP_FILENAME}:\n\t{"\n\t".join([file for file in files_to_zip if not any(folder in file.split('/') for folder in EXCLUDED_FOLDERS)])}")
+    print("Zipped files into {}:\n\t{}".format(ZIP_FILENAME, "\n\t".join([file for file in files_to_zip if not any(folder in file.split('/') for folder in EXCLUDED_FOLDERS)])))
 
 def upload_file():
     with open(ZIP_FILENAME, "rb") as file:
@@ -28,7 +28,7 @@ def upload_file():
     if response.status_code == 200:
         response_json = response.json()
         print(response_json)
-        print(f"Link: {response_json.get("link")}")
+        print(f"Link: {response_json.get('link')}")
     else:
         print(f"Failed to upload file {ZIP_FILENAME}")
         print(f"Status Code: {response.status_code}")
