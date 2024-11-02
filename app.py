@@ -117,7 +117,8 @@ def index():
             flash("You must be logged in to add an item.", "error")
             return redirect(url_for("login"))
 
-    return render_template("index.html", items=Item.query.all())
+    items = Item.query.filter_by(userID=current_user.id).all()
+    return render_template("index.html", items=items)
 
 @app.route("/edit/<int:id>", methods=["GET", "POST"])
 def edit(id):
