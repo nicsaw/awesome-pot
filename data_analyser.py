@@ -1,15 +1,48 @@
 import json
 import requests
+import re
 import pandas as pd
 from typing import List, Dict, Set, Any
 
 CACHE_FILENAME = "ip_info_cache.json"
+FLASK_LOG_PATTERN = re.compile(r'(?P<ip>(\d{1,3}\.){3}\d{1,3}) - - \[(?P<timestamp>.*?)\] (?P<message>.*)')
+
+def is_json_obj(line: str) -> bool:
+    try:
+        json.loads(line)
+        return True
+    except json.JSONDecodeError:
+        return False
+
+def parse_json_obj(line: str) -> Dict[str, Any]:
+    try:
+        return json.loads(line)
+    except json.JSONDecodeError:
+        return {}
+
+def is_flask_log(line: str) -> bool:
+    return bool(FLASK_LOG_PATTERN.match(line))
+
+def parse_flask_log(line: str) -> Dict[str, Any]:
+    match = FLASK_LOG_PATTERN.match(line)
+    if match:
+        return {
+            "ip": match.group("ip"),
+            "timestamp": match.group("timestamp"),
+            "message": match.group("message")
+        }
+    else:
+        return {}
 
 def json_to_list(file_path: str) -> List[Dict[str, Any]]:
     log_entries = []
     try:
         with open(file_path, 'r') as log_file:
             for line in log_file:
+                line = line.strip()
+                if not line:
+                    continue
+
                 try:
                     log_entry = json.loads(line)
                     log_entries.append(log_entry)
