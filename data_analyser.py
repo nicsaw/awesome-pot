@@ -7,17 +7,18 @@ from typing import List, Dict, Set, Any
 CACHE_FILENAME = "ip_info_cache.json"
 FLASK_LOG_PATTERN = re.compile(r'(?P<ip>(\d{1,3}\.){3}\d{1,3}) - - \[(?P<timestamp>.*?)\] (?P<message>.*)')
 
-def is_json_obj(line: str) -> bool:
+def is_json_log(line: str) -> bool:
     try:
         json.loads(line)
         return True
     except json.JSONDecodeError:
         return False
 
-def parse_json_obj(line: str) -> Dict[str, Any]:
+def parse_json_log(line: str) -> Dict[str, Any]:
     try:
         return json.loads(line)
     except json.JSONDecodeError:
+        print(f"ERROR parsing {line}")
         return {}
 
 def is_flask_log(line: str) -> bool:
@@ -29,7 +30,8 @@ def parse_flask_log(line: str) -> Dict[str, Any]:
         return {
             "ip": match.group("ip"),
             "timestamp": match.group("timestamp"),
-            "message": match.group("message")
+            "message": match.group("message"),
+            "is_flask": True,
         }
     else:
         return {}
@@ -43,16 +45,20 @@ def json_to_list(file_path: str) -> List[Dict[str, Any]]:
                 if not line:
                     continue
 
-                try:
-                    log_entry = json.loads(line)
+                if is_json_log(line):
+                    log_entry = parse_json_log(line)
                     log_entries.append(log_entry)
-                except json.JSONDecodeError:
+                elif is_flask_log(line):
+                    log_entry = parse_flask_log(line)
+                    log_entries.append(log_entry)
+                else:
                     continue
+
     except Exception as e:
         print(f"ERROR reading file {file_path}: {e}")
     return log_entries
 
-def load_ip_info_cache(cache_file=CACHE_FILENAME) -> Dict[str, Any]:
+def load_ip_info_cache(cache_file: str=CACHE_FILENAME) -> Dict[str, Any]:
     try:
         with open(cache_file, 'r') as f:
             cache = json.load(f)
@@ -65,7 +71,7 @@ def load_ip_info_cache(cache_file=CACHE_FILENAME) -> Dict[str, Any]:
         print(f"ERROR loading cache: {e}")
         return {}
 
-def save_ip_info_cache(ip_info_cache, cache_file=CACHE_FILENAME):
+def save_ip_info_cache(ip_info_cache: Dict[str, Any], cache_file: str = CACHE_FILENAME) -> None:
     try:
         with open(cache_file, 'w') as f:
             json.dump(ip_info_cache, f, indent=4)
@@ -73,8 +79,11 @@ def save_ip_info_cache(ip_info_cache, cache_file=CACHE_FILENAME):
     except Exception as e:
         print(f"ERROR saving cache: {e}")
 
-def get_unique_values(key: str, log_entries) -> Set[Any]:
-    return set(entry[key] for entry in log_entries if key in entry)
+def get_values(key: str, logs) -> List[Any]:
+    return [entry[key] for entry in logs if key in entry]
+
+def get_unique_values(key: str, logs) -> Set[Any]:
+    return set(entry[key] for entry in logs if key in entry)
 
 def get_ip_info(ip: str, ip_info_cache: Dict[str, Any]):
     if ip in ip_info_cache:
@@ -108,6 +117,8 @@ def export_key_value(df: pd.DataFrame, filter_key=None, filter_value=None, file_
     df[df[filter_key] == filter_value].to_csv(filename)
     print(f"Created {filename}")
 
+# ======================================== Cowrie Honeypot ========================================
+
 FILE_PATH_COWRIE = "/Users/nicholassaw/Downloads/cowrie/var/log/cowrie/cowrie.json"
 
 logs_cowrie = json_to_list(FILE_PATH_COWRIE)
@@ -126,17 +137,33 @@ print(f"Number of distinct IPs: {len(unique_ips)}")
 
 export_key_value(df_cowrie, "src_ip", "134.122.33.75", file_prefix="cowrie-")
 
-# ================================================================================
+# ======================================== SSH Honeypot ========================================
 
-FILE_PATH_SSH_HP = "/Users/nicholassaw/Downloads/data/hp-ssh.log"
+FILE_PATH_WEB_HP = "/Users/nicholassaw/Downloads/data/hp-ssh.log"
 
-logs_ssh_hp = json_to_list(FILE_PATH_SSH_HP)
-ip_info_cache = load_ip_info_cache()
+logs_ssh_hp = json_to_list(FILE_PATH_WEB_HP)
 
 df_ssh_hp = pd.DataFrame(logs_ssh_hp)
+df_ssh_hp = df_ssh_hp[~df_ssh_hp['is_flask'].notna()]
+df_ssh_hp = df_ssh_hp[~df_ssh_hp['request_method'].notna()]
+df_ssh_hp = df_ssh_hp.dropna(axis=1, how="all")
+
+df_ssh_hp.to_csv("test2.csv")
 
 export_frequency_counts(df_ssh_hp, ["client_ip", "event_type", "username", "password"], file_prefix="ssh_hp-")
 
 # Number of distinct IPs
 unique_ips_hp = get_unique_values("client_ip", logs_ssh_hp)
 print(f"Number of distinct IPs: {len(unique_ips_hp)}")
+
+# ======================================== WEB Honeypot ========================================
+
+FILE_PATH_WEB_HP = "/Users/nicholassaw/Downloads/data/hp-ssh.log"
+
+logs_web_hp = json_to_list(FILE_PATH_WEB_HP)
+
+df_web_hp = pd.DataFrame(logs_web_hp)
+df_web_hp = df_web_hp[df_web_hp['is_flask'].notna()]
+df_web_hp = df_web_hp.dropna(axis=1, how="all")
+
+df_web_hp.to_csv("test.csv")

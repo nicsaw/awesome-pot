@@ -83,7 +83,8 @@ def log_event(request: Request, **kwargs):
         "request_method": request.method,
         "request_path": request.path,
         "request_headers": dict(request.headers),
-        "user_agent": str(parse(request.headers.get("User-Agent")))
+        "user_agent": str(parse(request.headers.get("User-Agent"))),
+        "honeypot_type": "web",
     }
 
     extra_fields = {k: v for k, v in kwargs.items() if k not in log_entry}

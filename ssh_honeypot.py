@@ -16,6 +16,7 @@ def log_event(**kwargs):
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
         "client_ip": kwargs.get("client_ip", None),
         "event_type": kwargs.get("event_type", "generic_event"),
+        "honeypot_type": "ssh",
     }
 
     extra_fields = {k: v for k, v in kwargs.items() if k not in log_entry}
