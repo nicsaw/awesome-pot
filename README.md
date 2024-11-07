@@ -20,12 +20,27 @@ pip install -r requirements.txt
 ssh-keygen -t rsa -b 2048 -f server.key
 ```
 
-# SSH Honeypot
+# Usage
 
-Start SSH Honeypot:
+## Command-line Arguments
+
+| Argument         | Description                                      | Default      |
+| ---------------- | ------------------------------------------------ | ------------ |
+| `-t, --type`     | Specify the honeypot type (`ssh`, `web`, `all`). | **Required** |
+| `-a, --host`     | The host address to bind the honeypots to.       | `0.0.0.0`    |
+| `-s, --ssh-port` | Port for the SSH honeypot.                       | `2222`       |
+| `-w, --web-port` | Port for the Web honeypot.                       | `8080`       |
+
+## Start All Honeypots
 
 ```
-python3 ssh_honeypot.py
+python3 honeypot_launcher.py -t all
+```
+
+## Start SSH Honeypot:
+
+```
+python3 honeypot_launcher.py -t ssh
 ```
 
 Attacker's POV:
@@ -34,10 +49,8 @@ Attacker's POV:
 ssh -p 2222 user@{IP}
 ```
 
-# Web Honeypot
-
-Start Web Honeypot:
+## Start Web Honeypot:
 
 ```
-python3 app.py
+python3 honeypot_launcher.py -t web
 ```
